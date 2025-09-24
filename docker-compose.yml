@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./wwwroot:/opt/websrv/data/wwwroot
+      - ./logs:/opt/websrv/logs
+      - ./config:/opt/websrv/config
+    restart: unless-stopped
+    platform: linux/arm64
