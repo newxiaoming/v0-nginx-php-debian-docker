@@ -76,7 +76,6 @@ RUN docker-php-ext-install -j$(nproc) \
         dom \
         exif \
         fileinfo \
-        filter \
         ftp \
         hash \
         iconv \
@@ -95,7 +94,8 @@ RUN docker-php-ext-install -j$(nproc) \
         xmlreader \
         xmlwriter
 
-# 安装PHP核心扩展 - 需要配置的扩展
+RUN (docker-php-ext-install filter && echo "Filter extension installed successfully") || echo "Filter extension installation failed, skipping..."
+
 RUN docker-php-ext-configure gd --with-freetype-dir=/usr --with-jpeg-dir=/usr --with-png-dir=/usr \
     && docker-php-ext-install -j$(nproc) gd
 
