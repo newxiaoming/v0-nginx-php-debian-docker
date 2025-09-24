@@ -18,7 +18,9 @@ RUN mkdir -p /opt/websrv/data/wwwroot \
     /var/lib/php/wsdlcache
 
 # 更新包管理器并安装基础依赖
-RUN apt-get update && apt-get install -y \
+RUN \
+    sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list.d/debian.sources && \
+    apt-get update && apt-get install -y \
     wget \
     curl \
     gnupg2 \
