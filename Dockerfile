@@ -44,7 +44,7 @@ RUN \
     libonig-dev \
     libzip-dev \
     libsqlite3-dev \
-    libmysqlclient-dev \
+    default-libmysqlclient-dev \
     libgmp-dev \
     libicu-dev \
     libbz2-dev \
