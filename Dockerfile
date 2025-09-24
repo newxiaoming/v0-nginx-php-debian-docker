@@ -1,4 +1,4 @@
-FROM debian:13
+FROM debian:12
 
 # 设置环境变量
 ENV DEBIAN_FRONTEND=noninteractive
@@ -32,17 +32,15 @@ RUN apt-get update && apt-get install -y \
     git \
     unzip \
     supervisor \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# 添加Nginx官方仓库
 RUN curl -fsSL https://nginx.org/keys/nginx_signing.key | gpg --dearmor -o /usr/share/keyrings/nginx-archive-keyring.gpg \
-    && echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/debian $(lsb_release -cs) nginx" > /etc/apt/sources.list.d/nginx.list
+    && echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/debian bookworm nginx" > /etc/apt/sources.list.d/nginx.list
 
-# 添加PHP仓库 (使用Sury仓库获取PHP 7.3)
 RUN wget -qO /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg \
-    && echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list
+    && echo "deb https://packages.sury.org/php/ bookworm main" > /etc/apt/sources.list.d/php.list
 
-# 安装Nginx和PHP及其扩展
 RUN apt-get update && apt-get install -y \
     nginx \
     php7.3-fpm \
@@ -76,6 +74,7 @@ RUN apt-get update && apt-get install -y \
     libgeoip-dev \
     libprotobuf-dev \
     protobuf-compiler \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # 安装额外的PHP扩展
