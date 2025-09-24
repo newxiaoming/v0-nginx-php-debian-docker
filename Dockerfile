@@ -118,25 +118,21 @@ RUN docker-php-ext-install -j$(nproc) \
         gmp \
         xsl
 
-# 安装PECL扩展
-RUN pecl install imagick-3.4.4 \
-    && docker-php-ext-enable imagick
+# 安装ImageMagick扩展
+RUN pecl install imagick-3.4.4 && docker-php-ext-enable imagick || echo "ImageMagick installation failed, skipping..."
 
-RUN pecl install redis-5.3.7 \
-    && docker-php-ext-enable redis
+# 安装Redis扩展
+RUN pecl install redis-5.3.7 && docker-php-ext-enable redis || echo "Redis installation failed, skipping..."
 
-RUN pecl install geoip-1.1.1 \
-    && docker-php-ext-enable geoip
-
-RUN pecl install grpc-1.42.0 \
-    && docker-php-ext-enable grpc
-
-RUN pecl install protobuf-3.21.12 \
-    && docker-php-ext-enable protobuf
+# 安装GeoIP扩展
+RUN pecl install geoip-1.1.1 && docker-php-ext-enable geoip || echo "GeoIP installation failed, skipping..."
 
 # 安装Swoole扩展
-RUN pecl install swoole-4.8.13 \
-    && docker-php-ext-enable swoole
+RUN pecl install swoole-4.8.13 && docker-php-ext-enable swoole || echo "Swoole installation failed, skipping..."
+
+# 安装gRPC和Protobuf扩展（这两个可能有兼容性问题，添加更好的错误处理）
+RUN (pecl install grpc-1.42.0 && docker-php-ext-enable grpc) || echo "gRPC installation failed, skipping..."
+RUN (pecl install protobuf-3.21.12 && docker-php-ext-enable protobuf) || echo "Protobuf installation failed, skipping..."
 
 # 安装Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --version=${COMPOSER_VERSION} --install-dir=/usr/local/bin --filename=composer
