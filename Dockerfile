@@ -75,7 +75,7 @@ RUN \
     && rm -rf /var/lib/apt/lists/*
 
 RUN cd /tmp \
-    && wget https://www.php.net/distributions/php-${PHP_VERSION}.tar.gz \
+    && wget https://mirrors.mydev.work/php/${PHP_VERSION}/php-${PHP_VERSION}.tar.gz \
     && tar -xzf php-${PHP_VERSION}.tar.gz \
     && cd php-${PHP_VERSION} \
     && export PKG_CONFIG_PATH="/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/pkgconfig" \
