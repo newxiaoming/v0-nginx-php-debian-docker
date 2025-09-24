@@ -78,7 +78,13 @@ RUN cd /tmp \
     && wget https://mirrors.mydev.work/php/${PHP_VERSION}/php-${PHP_VERSION}.tar.gz \
     && tar -xzf php-${PHP_VERSION}.tar.gz \
     && cd php-${PHP_VERSION} \
-    && export PKG_CONFIG_PATH="/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/pkgconfig" \
+    && export PKG_CONFIG_PATH="/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/pkgconfig:/usr/lib/aarch64-linux-gnu/pkgconfig" \
+    && export OPENSSL_CFLAGS="-I/usr/include/openssl" \
+    && export OPENSSL_LIBS="-L/usr/lib/x86_64-linux-gnu -L/usr/lib/aarch64-linux-gnu -lssl -lcrypto" \
+    && ln -sf /usr/lib/x86_64-linux-gnu/libssl.so /usr/lib/libssl.so || true \
+    && ln -sf /usr/lib/x86_64-linux-gnu/libcrypto.so /usr/lib/libcrypto.so || true \
+    && ln -sf /usr/lib/aarch64-linux-gnu/libssl.so /usr/lib/libssl.so || true \
+    && ln -sf /usr/lib/aarch64-linux-gnu/libcrypto.so /usr/lib/libcrypto.so || true \
     && ./configure \
         --prefix=/usr/local/php \
         --with-config-file-path=/opt/websrv/config/php \
@@ -108,11 +114,9 @@ RUN cd /tmp \
         --enable-sysvsem \
         --enable-sysvshm \
         --with-curl \
-        --with-openssl=/usr \
-        --with-openssl-dir=/usr \
+        --with-openssl \
         --with-readline \
         --with-zlib \
-        --with-zlib-dir=/usr \
         --with-bz2 \
         --enable-zip \
         --with-libzip \
@@ -204,16 +208,6 @@ RUN cd /tmp \
     && make && make install \
     && echo "extension=protobuf.so" > /opt/websrv/config/php/conf.d/protobuf.ini \
     && rm -rf /tmp/protobuf-*
-
-RUN cd /tmp \
-    && wget https://pecl.php.net/get/swoole-4.8.12.tgz \
-    && tar -xzf swoole-4.8.12.tgz \
-    && cd swoole-4.8.12 \
-    && /usr/local/php/bin/phpize \
-    && ./configure --with-php-config=/usr/local/php/bin/php-config --enable-openssl --enable-http2 \
-    && make && make install \
-    && echo "extension=swoole.so" > /opt/websrv/config/php/conf.d/swoole.ini \
-    && rm -rf /tmp/swoole-*
 
 RUN cd /tmp \
     && git clone https://github.com/nsqio/php-nsq.git \
