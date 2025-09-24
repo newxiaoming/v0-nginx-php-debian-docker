@@ -31,6 +31,7 @@ RUN \
     software-properties-common \
     supervisor \
     nginx \
+    git \
     # PHP扩展编译依赖
     libxml2-dev \
     libssl-dev \
@@ -46,6 +47,7 @@ RUN \
     libicu-dev \
     libbz2-dev \
     libreadline-dev \
+    libncurses5-dev \
     libxslt1-dev \
     libgeoip-dev \
     libprotobuf-dev \
@@ -61,43 +63,29 @@ RUN \
     libsnmp-dev \
     libpspell-dev \
     librecode-dev \
+    libc-client-dev \
+    libkrb5-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# 安装PHP核心扩展
-RUN docker-php-ext-configure gd --with-freetype-dir=/usr --with-jpeg-dir=/usr --with-png-dir=/usr \
-    && docker-php-ext-configure intl \
-    && docker-php-ext-install -j$(nproc) \
+# 安装PHP核心扩展 - 第一批（基础扩展）
+RUN docker-php-ext-install -j$(nproc) \
         bcmath \
         calendar \
-        exif \
-        ftp \
-        gd \
-        intl \
-        mbstring \
-        mysqli \
-        pdo_mysql \
-        pdo_sqlite \
-        pcntl \
-        shmop \
-        soap \
-        sockets \
-        sysvmsg \
-        sysvsem \
-        sysvshm \
-        curl \
-        readline \
-        bz2 \
-        zip \
-        gmp \
-        xsl \
-        fileinfo \
         ctype \
+        curl \
         dom \
+        exif \
+        fileinfo \
         filter \
+        ftp \
         hash \
         iconv \
         json \
+        mbstring \
+        pdo \
+        pdo_mysql \
+        pdo_sqlite \
         phar \
         posix \
         session \
@@ -107,6 +95,28 @@ RUN docker-php-ext-configure gd --with-freetype-dir=/usr --with-jpeg-dir=/usr --
         xml \
         xmlreader \
         xmlwriter
+
+# 安装PHP核心扩展 - 第二批（需要配置的扩展）
+RUN docker-php-ext-configure gd --with-freetype-dir=/usr --with-jpeg-dir=/usr --with-png-dir=/usr \
+    && docker-php-ext-install -j$(nproc) gd
+
+RUN docker-php-ext-configure intl \
+    && docker-php-ext-install -j$(nproc) intl
+
+# 安装PHP核心扩展 - 第三批（系统相关扩展）
+RUN docker-php-ext-install -j$(nproc) \
+        mysqli \
+        pcntl \
+        shmop \
+        soap \
+        sockets \
+        sysvmsg \
+        sysvsem \
+        sysvshm \
+        bz2 \
+        zip \
+        gmp \
+        xsl
 
 # 安装PECL扩展
 RUN pecl install imagick-3.4.4 \
