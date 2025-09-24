@@ -1,8 +1,8 @@
-FROM debian:12
+# 使用官方PHP 7.3-fpm镜像作为基础
+FROM php:7.3.33-fpm-bullseye
 
 # 设置环境变量
 ENV DEBIAN_FRONTEND=noninteractive
-ENV PHP_VERSION=7.3.33
 ENV NGINX_VERSION=1.28
 ENV SUPERVISOR_VERSION=4.2.4
 ENV COMPOSER_VERSION=2.6.3
@@ -17,9 +17,8 @@ RUN mkdir -p /opt/websrv/data/wwwroot \
     /var/lib/php/sessions \
     /var/lib/php/wsdlcache
 
-RUN \
-    sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list.d/debian.sources && \
-    apt-get update && apt-get install -y \
+# 更新包管理器并安装基础依赖
+RUN apt-get update && apt-get install -y \
     wget \
     curl \
     gnupg2 \
@@ -27,19 +26,11 @@ RUN \
     ca-certificates \
     apt-transport-https \
     software-properties-common \
-    build-essential \
-    autoconf \
-    automake \
-    libtool \
-    pkg-config \
-    cmake \
-    git \
-    unzip \
     supervisor \
+    nginx \
+    # PHP扩展编译依赖
     libxml2-dev \
     libssl-dev \
-    libssl3 \
-    openssl \
     libcurl4-openssl-dev \
     libjpeg-dev \
     libpng-dev \
@@ -67,159 +58,85 @@ RUN \
     libsnmp-dev \
     libpspell-dev \
     librecode-dev \
-    libmcrypt-dev \
-    re2c \
-    bison \
-    flex \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-RUN cd /tmp \
-    && wget https://mirrors.mydev.work/php/${PHP_VERSION}/php-${PHP_VERSION}.tar.gz \
-    && tar -xzf php-${PHP_VERSION}.tar.gz \
-    && cd php-${PHP_VERSION} \
-    && export PKG_CONFIG_PATH="/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/pkgconfig:/usr/lib/aarch64-linux-gnu/pkgconfig" \
-    && export OPENSSL_CFLAGS="-I/usr/include/openssl" \
-    && export OPENSSL_LIBS="-L/usr/lib/x86_64-linux-gnu -L/usr/lib/aarch64-linux-gnu -lssl -lcrypto" \
-    && ln -sf /usr/lib/x86_64-linux-gnu/libssl.so /usr/lib/libssl.so || true \
-    && ln -sf /usr/lib/x86_64-linux-gnu/libcrypto.so /usr/lib/libcrypto.so || true \
-    && ln -sf /usr/lib/aarch64-linux-gnu/libssl.so /usr/lib/libssl.so || true \
-    && ln -sf /usr/lib/aarch64-linux-gnu/libcrypto.so /usr/lib/libcrypto.so || true \
-    && ./configure \
-        --prefix=/usr/local/php \
-        --with-config-file-path=/opt/websrv/config/php \
-        --with-config-file-scan-dir=/opt/websrv/config/php/conf.d \
-        --enable-fpm \
-        --with-fpm-user=www-data \
-        --with-fpm-group=www-data \
-        --enable-bcmath \
-        --enable-calendar \
-        --enable-exif \
-        --enable-ftp \
-        --enable-gd \
-        --with-freetype-dir=/usr \
-        --with-jpeg-dir=/usr \
-        --with-png-dir=/usr \
-        --enable-intl \
-        --enable-mbstring \
-        --enable-mysqlnd \
-        --with-mysqli=mysqlnd \
-        --with-pdo-mysql=mysqlnd \
-        --with-pdo-sqlite \
-        --enable-pcntl \
-        --enable-shmop \
-        --enable-soap \
-        --enable-sockets \
-        --enable-sysvmsg \
-        --enable-sysvsem \
-        --enable-sysvshm \
-        --with-curl \
-        --with-openssl \
-        --with-readline \
-        --with-zlib \
-        --with-bz2 \
-        --enable-zip \
-        --with-libzip \
-        --with-gmp \
-        --with-xsl \
-        --enable-fileinfo \
-        --enable-ctype \
-        --enable-dom \
-        --enable-filter \
-        --enable-hash \
-        --enable-iconv \
-        --enable-json \
-        --enable-libxml \
-        --enable-phar \
-        --enable-posix \
-        --enable-session \
-        --enable-simplexml \
-        --enable-sqlite3 \
-        --enable-tokenizer \
-        --enable-xml \
-        --enable-xmlreader \
-        --enable-xmlwriter \
-        --with-pic \
-        --disable-rpath \
-    && make -j$(nproc) \
-    && make install \
-    && rm -rf /tmp/php-${PHP_VERSION}*
+# 安装PHP核心扩展
+RUN docker-php-ext-configure gd --with-freetype-dir=/usr --with-jpeg-dir=/usr --with-png-dir=/usr \
+    && docker-php-ext-configure intl \
+    && docker-php-ext-install -j$(nproc) \
+        bcmath \
+        calendar \
+        exif \
+        ftp \
+        gd \
+        intl \
+        mbstring \
+        mysqli \
+        pdo_mysql \
+        pdo_sqlite \
+        pcntl \
+        shmop \
+        soap \
+        sockets \
+        sysvmsg \
+        sysvsem \
+        sysvshm \
+        curl \
+        readline \
+        bz2 \
+        zip \
+        gmp \
+        xsl \
+        fileinfo \
+        ctype \
+        dom \
+        filter \
+        hash \
+        iconv \
+        json \
+        phar \
+        posix \
+        session \
+        simplexml \
+        sqlite3 \
+        tokenizer \
+        xml \
+        xmlreader \
+        xmlwriter
 
-RUN ln -sf /usr/local/php/bin/php /usr/local/bin/php \
-    && ln -sf /usr/local/php/bin/php-config /usr/local/bin/php-config \
-    && ln -sf /usr/local/php/bin/phpize /usr/local/bin/phpize \
-    && ln -sf /usr/local/php/sbin/php-fpm /usr/local/bin/php-fpm \
-    && mkdir -p /opt/websrv/config/php/conf.d
+# 安装PECL扩展
+RUN pecl install imagick-3.4.4 \
+    && docker-php-ext-enable imagick
 
-# 安装Nginx
-RUN curl -fsSL https://nginx.org/keys/nginx_signing.key | gpg --dearmor -o /usr/share/keyrings/nginx-archive-keyring.gpg \
-    && echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/debian bookworm nginx" > /etc/apt/sources.list.d/nginx.list \
-    && apt-get update \
-    && apt-get install -y nginx \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+RUN pecl install redis-5.3.7 \
+    && docker-php-ext-enable redis
 
-RUN cd /tmp \
-    && wget https://pecl.php.net/get/imagick-3.4.4.tgz \
-    && tar -xzf imagick-3.4.4.tgz \
-    && cd imagick-3.4.4 \
-    && /usr/local/php/bin/phpize \
-    && ./configure --with-php-config=/usr/local/php/bin/php-config \
-    && make && make install \
-    && echo "extension=imagick.so" > /opt/websrv/config/php/conf.d/imagick.ini \
-    && rm -rf /tmp/imagick-*
+RUN pecl install geoip-1.1.1 \
+    && docker-php-ext-enable geoip
 
-RUN cd /tmp \
-    && wget https://pecl.php.net/get/redis-5.3.7.tgz \
-    && tar -xzf redis-5.3.7.tgz \
-    && cd redis-5.3.7 \
-    && /usr/local/php/bin/phpize \
-    && ./configure --with-php-config=/usr/local/php/bin/php-config \
-    && make && make install \
-    && echo "extension=redis.so" > /opt/websrv/config/php/conf.d/redis.ini \
-    && rm -rf /tmp/redis-*
+RUN pecl install grpc-1.42.0 \
+    && docker-php-ext-enable grpc
 
-RUN cd /tmp \
-    && wget https://pecl.php.net/get/geoip-1.1.1.tgz \
-    && tar -xzf geoip-1.1.1.tgz \
-    && cd geoip-1.1.1 \
-    && /usr/local/php/bin/phpize \
-    && ./configure --with-php-config=/usr/local/php/bin/php-config \
-    && make && make install \
-    && echo "extension=geoip.so" > /opt/websrv/config/php/conf.d/geoip.ini \
-    && rm -rf /tmp/geoip-*
+RUN pecl install protobuf-3.21.12 \
+    && docker-php-ext-enable protobuf
 
-RUN cd /tmp \
-    && wget https://pecl.php.net/get/grpc-1.42.0.tgz \
-    && tar -xzf grpc-1.42.0.tgz \
-    && cd grpc-1.42.0 \
-    && /usr/local/php/bin/phpize \
-    && ./configure --with-php-config=/usr/local/php/bin/php-config \
-    && make && make install \
-    && echo "extension=grpc.so" > /opt/websrv/config/php/conf.d/grpc.ini \
-    && rm -rf /tmp/grpc-*
+# 安装Swoole扩展
+RUN pecl install swoole-4.8.13 \
+    && docker-php-ext-enable swoole
 
-RUN cd /tmp \
-    && wget https://pecl.php.net/get/protobuf-3.21.12.tgz \
-    && tar -xzf protobuf-3.21.12.tgz \
-    && cd protobuf-3.21.12 \
-    && /usr/local/php/bin/phpize \
-    && ./configure --with-php-config=/usr/local/php/bin/php-config \
-    && make && make install \
-    && echo "extension=protobuf.so" > /opt/websrv/config/php/conf.d/protobuf.ini \
-    && rm -rf /tmp/protobuf-*
-
+# 安装NSQ扩展（从源码编译）
 RUN cd /tmp \
     && git clone https://github.com/nsqio/php-nsq.git \
     && cd php-nsq \
-    && /usr/local/php/bin/phpize \
-    && ./configure --with-php-config=/usr/local/php/bin/php-config \
+    && phpize \
+    && ./configure \
     && make && make install \
-    && echo "extension=nsq.so" > /opt/websrv/config/php/conf.d/nsq.ini \
+    && docker-php-ext-enable nsq \
     && rm -rf /tmp/php-nsq
 
 # 安装Composer
-RUN curl -sS https://getcomposer.org/installer | /usr/local/php/bin/php -- --version=${COMPOSER_VERSION} --install-dir=/usr/local/bin --filename=composer
+RUN curl -sS https://getcomposer.org/installer | php -- --version=${COMPOSER_VERSION} --install-dir=/usr/local/bin --filename=composer
 
 # 设置权限
 RUN chown -R www-data:www-data /var/lib/php \
@@ -229,6 +146,7 @@ RUN chown -R www-data:www-data /var/lib/php \
 COPY nginx.conf /opt/websrv/config/nginx/nginx.conf
 COPY default.conf /opt/websrv/config/nginx/conf.d/default.conf
 
+# 创建PHP配置目录
 RUN mkdir -p /opt/websrv/config/php/pool.d
 
 # 配置PHP-FPM
@@ -239,8 +157,8 @@ COPY php.ini /opt/websrv/config/php/php.ini
 # 配置Supervisor
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# 创建nginx用户和组
-RUN groupadd -r nginx && useradd -r -g nginx nginx
+# 创建nginx用户和组（如果不存在）
+RUN groupadd -f nginx && useradd -r -g nginx nginx || true
 
 # 设置权限
 RUN chown -R nginx:nginx /opt/websrv/data/wwwroot \
