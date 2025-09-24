@@ -68,7 +68,6 @@ RUN \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# 安装PHP核心扩展 - 第一批（基础扩展）
 RUN docker-php-ext-install -j$(nproc) \
         bcmath \
         calendar \
@@ -77,6 +76,7 @@ RUN docker-php-ext-install -j$(nproc) \
         dom \
         exif \
         fileinfo \
+        filter \
         ftp \
         hash \
         iconv \
@@ -95,16 +95,14 @@ RUN docker-php-ext-install -j$(nproc) \
         xmlreader \
         xmlwriter
 
-RUN docker-php-ext-install filter || echo "Filter extension installation failed, skipping..."
-
-# 安装PHP核心扩展 - 第二批（需要配置的扩展）
+# 安装PHP核心扩展 - 需要配置的扩展
 RUN docker-php-ext-configure gd --with-freetype-dir=/usr --with-jpeg-dir=/usr --with-png-dir=/usr \
     && docker-php-ext-install -j$(nproc) gd
 
 RUN docker-php-ext-configure intl \
     && docker-php-ext-install -j$(nproc) intl
 
-# 安装PHP核心扩展 - 第三批（系统相关扩展）
+# 安装PHP核心扩展 - 系统相关扩展
 RUN docker-php-ext-install -j$(nproc) \
         mysqli \
         pcntl \
@@ -119,36 +117,19 @@ RUN docker-php-ext-install -j$(nproc) \
         gmp \
         xsl
 
-# 安装Redis扩展
-RUN pecl install redis-5.3.7 || true
-RUN docker-php-ext-enable redis || true
+RUN (pecl install redis-5.3.7 && docker-php-ext-enable redis) || echo "Redis extension installation failed, skipping..."
 
-# 安装ImageMagick扩展
-RUN pecl install imagick-3.4.4 || true
-RUN docker-php-ext-enable imagick || true
+RUN (pecl install imagick-3.4.4 && docker-php-ext-enable imagick) || echo "ImageMagick extension installation failed, skipping..."
 
-# 安装GeoIP扩展
-RUN pecl install geoip-1.1.1 || true
-RUN docker-php-ext-enable geoip || true
+RUN (pecl install geoip-1.1.1 && docker-php-ext-enable geoip) || echo "GeoIP extension installation failed, skipping..."
 
-# 安装Swoole扩展
-RUN pecl install swoole-4.8.13 || true
-RUN docker-php-ext-enable swoole || true
+RUN (pecl install swoole-4.8.13 && docker-php-ext-enable swoole) || echo "Swoole extension installation failed, skipping..."
 
-# 安装gRPC扩展（可能不兼容，允许失败）
-RUN pecl install grpc-1.42.0 || true
-RUN docker-php-ext-enable grpc || true
-
-# 安装Protobuf扩展（可能不兼容，允许失败）
-RUN pecl install protobuf-3.21.12 || true
-RUN docker-php-ext-enable protobuf || true
+# RUN (pecl install grpc-1.42.0 && docker-php-ext-enable grpc) || echo "gRPC extension installation failed, skipping..."
+# RUN (pecl install protobuf-3.21.12 && docker-php-ext-enable protobuf) || echo "Protobuf extension installation failed, skipping..."
 
 # 安装Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --version=${COMPOSER_VERSION} --install-dir=/usr/local/bin --filename=composer
-
-# 设置权限
-RUN chown -R www-data:www-data /var/lib/php \
-    && chmod -R 755 /var/lib/php
 
 # 配置Nginx
 COPY nginx.conf /opt/websrv/config/nginx/nginx.conf
@@ -167,6 +148,10 @@ COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # 创建nginx用户和组（如果不存在）
 RUN groupadd -f nginx && useradd -r -g nginx nginx || true
+
+# 设置权限
+RUN chown -R www-data:www-data /var/lib/php \
+    && chmod -R 755 /var/lib/php
 
 # 设置权限
 RUN chown -R nginx:nginx /opt/websrv/data/wwwroot \
