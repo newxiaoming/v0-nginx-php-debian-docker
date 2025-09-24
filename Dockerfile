@@ -143,9 +143,10 @@ RUN cd /tmp \
     && cd php-nsq \
     && phpize \
     && ./configure \
-    && make \
+    && make || true \
     && if [ -f modules/nsq.so ]; then \
-        make install && docker-php-ext-enable nsq; \
+        cp modules/nsq.so $(php-config --extension-dir)/ && \
+        docker-php-ext-enable nsq; \
     else \
         echo "NSQ extension compilation failed, skipping..."; \
     fi \
