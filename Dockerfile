@@ -17,7 +17,9 @@ RUN mkdir -p /opt/websrv/data/wwwroot \
     /var/lib/php/sessions \
     /var/lib/php/wsdlcache
 
-RUN apt-get update && apt-get install -y \
+RUN \
+    sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list.d/debian.sources && \
+    apt-get update && apt-get install -y \
     wget \
     curl \
     gnupg2 \
