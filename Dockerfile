@@ -17,7 +17,6 @@ RUN mkdir -p /opt/websrv/data/wwwroot \
     /var/lib/php/sessions \
     /var/lib/php/wsdlcache
 
-# 更新系统并安装基础依赖
 RUN apt-get update && apt-get install -y \
     wget \
     curl \
@@ -34,76 +33,180 @@ RUN apt-get update && apt-get install -y \
     git \
     unzip \
     supervisor \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN curl -fsSL https://nginx.org/keys/nginx_signing.key | gpg --dearmor -o /usr/share/keyrings/nginx-archive-keyring.gpg \
-    && echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/debian bookworm nginx" > /etc/apt/sources.list.d/nginx.list
-
-# 先尝试使用系统自带的PHP，然后手动编译需要的扩展
-RUN apt-get update && apt-get install -y \
-    nginx \
-    php-fpm \
-    php-cli \
-    php-common \
-    php-bcmath \
-    php-curl \
-    php-dom \
-    php-gd \
-    php-gmp \
-    php-mbstring \
-    php-mysql \
-    php-pdo \
-    php-redis \
-    php-sqlite3 \
-    php-xml \
-    php-zip \
-    php-dev \
-    php-pear \
+    libxml2-dev \
+    libssl-dev \
+    libcurl4-openssl-dev \
+    libjpeg-dev \
+    libpng-dev \
+    libfreetype6-dev \
+    libonig-dev \
+    libzip-dev \
+    libsqlite3-dev \
+    libmysqlclient-dev \
+    libgmp-dev \
+    libicu-dev \
+    libbz2-dev \
+    libreadline-dev \
+    libxslt1-dev \
     libgeoip-dev \
     libprotobuf-dev \
     protobuf-compiler \
     libmagickwand-dev \
-    libswoole-dev \
+    libpcre3-dev \
+    libedit-dev \
+    libsodium-dev \
+    libargon2-dev \
+    re2c \
+    bison \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# 安装imagick扩展
-RUN pecl install imagick \
-    && echo "extension=imagick.so" > /etc/php/8.2/mods-available/imagick.ini \
-    && phpenmod imagick
-
-# 安装geoip扩展
-RUN pecl install geoip-1.1.1 \
-    && echo "extension=geoip.so" > /etc/php/8.2/mods-available/geoip.ini \
-    && phpenmod geoip
-
-# 安装grpc扩展
-RUN pecl install grpc \
-    && echo "extension=grpc.so" > /etc/php/8.2/mods-available/grpc.ini \
-    && phpenmod grpc
-
-# 安装protobuf扩展
-RUN pecl install protobuf \
-    && echo "extension=protobuf.so" > /etc/php/8.2/mods-available/protobuf.ini \
-    && phpenmod protobuf
-
-# 安装swoole扩展
-RUN pecl install swoole \
-    && echo "extension=swoole.so" > /etc/php/8.2/mods-available/swoole.ini \
-    && phpenmod swoole
-
-RUN git clone https://github.com/nsqio/php-nsq.git /tmp/php-nsq \
-    && cd /tmp/php-nsq \
-    && phpize \
+RUN cd /tmp \
+    && wget https://www.php.net/distributions/php-${PHP_VERSION}.tar.gz \
+    && tar -xzf php-${PHP_VERSION}.tar.gz \
+    && cd php-${PHP_VERSION} \
     && ./configure \
+        --prefix=/usr/local/php \
+        --with-config-file-path=/opt/websrv/config/php \
+        --with-config-file-scan-dir=/opt/websrv/config/php/conf.d \
+        --enable-fpm \
+        --with-fpm-user=www-data \
+        --with-fpm-group=www-data \
+        --enable-bcmath \
+        --enable-calendar \
+        --enable-exif \
+        --enable-ftp \
+        --enable-gd \
+        --with-freetype \
+        --with-jpeg \
+        --enable-intl \
+        --enable-mbstring \
+        --enable-mysqlnd \
+        --with-mysqli=mysqlnd \
+        --with-pdo-mysql=mysqlnd \
+        --with-pdo-sqlite \
+        --enable-pcntl \
+        --enable-shmop \
+        --enable-soap \
+        --enable-sockets \
+        --enable-sysvmsg \
+        --enable-sysvsem \
+        --enable-sysvshm \
+        --with-curl \
+        --with-openssl \
+        --with-readline \
+        --with-zlib \
+        --with-bz2 \
+        --enable-zip \
+        --with-libzip \
+        --with-gmp \
+        --with-xsl \
+        --enable-fileinfo \
+        --enable-ctype \
+        --enable-dom \
+        --enable-filter \
+        --enable-hash \
+        --enable-iconv \
+        --enable-json \
+        --enable-libxml \
+        --enable-phar \
+        --enable-posix \
+        --enable-session \
+        --enable-simplexml \
+        --enable-sqlite3 \
+        --enable-tokenizer \
+        --enable-xml \
+        --enable-xmlreader \
+        --enable-xmlwriter \
+    && make -j$(nproc) \
+    && make install \
+    && rm -rf /tmp/php-${PHP_VERSION}*
+
+RUN ln -sf /usr/local/php/bin/php /usr/local/bin/php \
+    && ln -sf /usr/local/php/bin/php-config /usr/local/bin/php-config \
+    && ln -sf /usr/local/php/bin/phpize /usr/local/bin/phpize \
+    && ln -sf /usr/local/php/sbin/php-fpm /usr/local/bin/php-fpm \
+    && mkdir -p /opt/websrv/config/php/conf.d
+
+# 安装Nginx
+RUN curl -fsSL https://nginx.org/keys/nginx_signing.key | gpg --dearmor -o /usr/share/keyrings/nginx-archive-keyring.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/debian bookworm nginx" > /etc/apt/sources.list.d/nginx.list \
+    && apt-get update \
+    && apt-get install -y nginx \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN cd /tmp \
+    && wget https://pecl.php.net/get/imagick-3.4.4.tgz \
+    && tar -xzf imagick-3.4.4.tgz \
+    && cd imagick-3.4.4 \
+    && /usr/local/php/bin/phpize \
+    && ./configure --with-php-config=/usr/local/php/bin/php-config \
     && make && make install \
-    && echo "extension=nsq.so" > /etc/php/8.2/mods-available/nsq.ini \
-    && phpenmod nsq \
+    && echo "extension=imagick.so" > /opt/websrv/config/php/conf.d/imagick.ini \
+    && rm -rf /tmp/imagick-*
+
+RUN cd /tmp \
+    && wget https://pecl.php.net/get/redis-5.3.7.tgz \
+    && tar -xzf redis-5.3.7.tgz \
+    && cd redis-5.3.7 \
+    && /usr/local/php/bin/phpize \
+    && ./configure --with-php-config=/usr/local/php/bin/php-config \
+    && make && make install \
+    && echo "extension=redis.so" > /opt/websrv/config/php/conf.d/redis.ini \
+    && rm -rf /tmp/redis-*
+
+RUN cd /tmp \
+    && wget https://pecl.php.net/get/geoip-1.1.1.tgz \
+    && tar -xzf geoip-1.1.1.tgz \
+    && cd geoip-1.1.1 \
+    && /usr/local/php/bin/phpize \
+    && ./configure --with-php-config=/usr/local/php/bin/php-config \
+    && make && make install \
+    && echo "extension=geoip.so" > /opt/websrv/config/php/conf.d/geoip.ini \
+    && rm -rf /tmp/geoip-*
+
+RUN cd /tmp \
+    && wget https://pecl.php.net/get/grpc-1.42.0.tgz \
+    && tar -xzf grpc-1.42.0.tgz \
+    && cd grpc-1.42.0 \
+    && /usr/local/php/bin/phpize \
+    && ./configure --with-php-config=/usr/local/php/bin/php-config \
+    && make && make install \
+    && echo "extension=grpc.so" > /opt/websrv/config/php/conf.d/grpc.ini \
+    && rm -rf /tmp/grpc-*
+
+RUN cd /tmp \
+    && wget https://pecl.php.net/get/protobuf-3.21.12.tgz \
+    && tar -xzf protobuf-3.21.12.tgz \
+    && cd protobuf-3.21.12 \
+    && /usr/local/php/bin/phpize \
+    && ./configure --with-php-config=/usr/local/php/bin/php-config \
+    && make && make install \
+    && echo "extension=protobuf.so" > /opt/websrv/config/php/conf.d/protobuf.ini \
+    && rm -rf /tmp/protobuf-*
+
+RUN cd /tmp \
+    && wget https://pecl.php.net/get/swoole-4.8.12.tgz \
+    && tar -xzf swoole-4.8.12.tgz \
+    && cd swoole-4.8.12 \
+    && /usr/local/php/bin/phpize \
+    && ./configure --with-php-config=/usr/local/php/bin/php-config --enable-openssl --enable-http2 \
+    && make && make install \
+    && echo "extension=swoole.so" > /opt/websrv/config/php/conf.d/swoole.ini \
+    && rm -rf /tmp/swoole-*
+
+RUN cd /tmp \
+    && git clone https://github.com/nsqio/php-nsq.git \
+    && cd php-nsq \
+    && /usr/local/php/bin/phpize \
+    && ./configure --with-php-config=/usr/local/php/bin/php-config \
+    && make && make install \
+    && echo "extension=nsq.so" > /opt/websrv/config/php/conf.d/nsq.ini \
     && rm -rf /tmp/php-nsq
 
 # 安装Composer
-RUN curl -sS https://getcomposer.org/installer | php -- --version=${COMPOSER_VERSION} --install-dir=/usr/local/bin --filename=composer
+RUN curl -sS https://getcomposer.org/installer | /usr/local/php/bin/php -- --version=${COMPOSER_VERSION} --install-dir=/usr/local/bin --filename=composer
 
 # 设置权限
 RUN chown -R www-data:www-data /var/lib/php \
@@ -119,9 +222,6 @@ RUN mkdir -p /opt/websrv/config/php/pool.d
 COPY php-fpm.conf /opt/websrv/config/php/php-fpm.conf
 COPY www.conf /opt/websrv/config/php/pool.d/www.conf
 COPY php.ini /opt/websrv/config/php/php.ini
-
-RUN ln -sf /opt/websrv/config/php/php.ini /etc/php/8.2/fpm/php.ini \
-    && ln -sf /opt/websrv/config/php/php.ini /etc/php/8.2/cli/php.ini
 
 # 配置Supervisor
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
