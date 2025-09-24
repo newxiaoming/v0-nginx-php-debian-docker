@@ -19,7 +19,7 @@ RUN mkdir -p /opt/websrv/data/wwwroot \
 
 # 更新包管理器并安装基础依赖
 RUN \
-    sed -i "s@http://\(deb\|security\).debian.org@mirrors.ustc.edu.cn@g" /etc/apt/sources.list && \
+    sed -i "s@http://\(deb\|security\).debian.org@mirrors.ustc.edu.cn@g" /etc/apt/sources && \
     apt-get update && apt-get install -y \
     wget \
     curl \
