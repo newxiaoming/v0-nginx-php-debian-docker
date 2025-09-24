@@ -138,21 +138,6 @@ RUN pecl install protobuf-3.21.12 \
 RUN pecl install swoole-4.8.13 \
     && docker-php-ext-enable swoole
 
-RUN cd /tmp \
-    && git clone https://github.com/nsqio/php-nsq.git \
-    && cd php-nsq \
-    && phpize \
-    && ./configure \
-    && make || true \
-    && if [ -f modules/nsq.so ]; then \
-        cp modules/nsq.so $(php-config --extension-dir)/ && \
-        docker-php-ext-enable nsq; \
-    else \
-        echo "NSQ extension compilation failed, skipping..."; \
-    fi \
-    && cd / \
-    && rm -rf /tmp/php-nsq
-
 # 安装Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --version=${COMPOSER_VERSION} --install-dir=/usr/local/bin --filename=composer
 
