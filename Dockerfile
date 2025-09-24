@@ -118,28 +118,23 @@ RUN docker-php-ext-install -j$(nproc) \
         gmp \
         xsl
 
-# 安装ImageMagick扩展
-RUN pecl install imagick-3.4.4 || true \
-    && docker-php-ext-enable imagick || true
-
 # 安装Redis扩展
-RUN pecl install redis-5.3.7 || true \
-    && docker-php-ext-enable redis || true
+RUN (pecl install redis-5.3.7 && docker-php-ext-enable redis) || echo "Redis extension installation failed, skipping..."
+
+# 安装ImageMagick扩展
+RUN (pecl install imagick-3.4.4 && docker-php-ext-enable imagick) || echo "ImageMagick extension installation failed, skipping..."
 
 # 安装GeoIP扩展
-RUN pecl install geoip-1.1.1 || true \
-    && docker-php-ext-enable geoip || true
+RUN (pecl install geoip-1.1.1 && docker-php-ext-enable geoip) || echo "GeoIP extension installation failed, skipping..."
 
 # 安装Swoole扩展
-RUN pecl install swoole-4.8.13 || true \
-    && docker-php-ext-enable swoole || true
+RUN (pecl install swoole-4.8.13 && docker-php-ext-enable swoole) || echo "Swoole extension installation failed, skipping..."
 
-# 安装gRPC和Protobuf扩展（使用更保守的方法）
-RUN pecl install grpc-1.42.0 || true \
-    && docker-php-ext-enable grpc || true
+# 安装gRPC扩展（可能不兼容，允许失败）
+RUN (pecl install grpc-1.42.0 && docker-php-ext-enable grpc) || echo "gRPC extension installation failed, skipping..."
 
-RUN pecl install protobuf-3.21.12 || true \
-    && docker-php-ext-enable protobuf || true
+# 安装Protobuf扩展（可能不兼容，允许失败）
+RUN (pecl install protobuf-3.21.12 && docker-php-ext-enable protobuf) || echo "Protobuf extension installation failed, skipping..."
 
 # 安装Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --version=${COMPOSER_VERSION} --install-dir=/usr/local/bin --filename=composer
