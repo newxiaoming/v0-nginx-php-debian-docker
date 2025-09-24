@@ -29,6 +29,7 @@ RUN \
     software-properties-common \
     build-essential \
     autoconf \
+    automake \
     libtool \
     pkg-config \
     cmake \
@@ -37,6 +38,8 @@ RUN \
     supervisor \
     libxml2-dev \
     libssl-dev \
+    libssl3 \
+    openssl \
     libcurl4-openssl-dev \
     libjpeg-dev \
     libpng-dev \
@@ -58,8 +61,16 @@ RUN \
     libedit-dev \
     libsodium-dev \
     libargon2-dev \
+    libffi-dev \
+    libtidy-dev \
+    libenchant-2-dev \
+    libsnmp-dev \
+    libpspell-dev \
+    librecode-dev \
+    libmcrypt-dev \
     re2c \
     bison \
+    flex \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -67,6 +78,7 @@ RUN cd /tmp \
     && wget https://www.php.net/distributions/php-${PHP_VERSION}.tar.gz \
     && tar -xzf php-${PHP_VERSION}.tar.gz \
     && cd php-${PHP_VERSION} \
+    && export PKG_CONFIG_PATH="/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/pkgconfig" \
     && ./configure \
         --prefix=/usr/local/php \
         --with-config-file-path=/opt/websrv/config/php \
@@ -79,8 +91,9 @@ RUN cd /tmp \
         --enable-exif \
         --enable-ftp \
         --enable-gd \
-        --with-freetype \
-        --with-jpeg \
+        --with-freetype-dir=/usr \
+        --with-jpeg-dir=/usr \
+        --with-png-dir=/usr \
         --enable-intl \
         --enable-mbstring \
         --enable-mysqlnd \
@@ -95,9 +108,11 @@ RUN cd /tmp \
         --enable-sysvsem \
         --enable-sysvshm \
         --with-curl \
-        --with-openssl \
+        --with-openssl=/usr \
+        --with-openssl-dir=/usr \
         --with-readline \
         --with-zlib \
+        --with-zlib-dir=/usr \
         --with-bz2 \
         --enable-zip \
         --with-libzip \
@@ -120,6 +135,8 @@ RUN cd /tmp \
         --enable-xml \
         --enable-xmlreader \
         --enable-xmlwriter \
+        --with-pic \
+        --disable-rpath \
     && make -j$(nproc) \
     && make install \
     && rm -rf /tmp/php-${PHP_VERSION}*
