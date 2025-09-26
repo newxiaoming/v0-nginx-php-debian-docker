@@ -117,13 +117,15 @@ RUN docker-php-ext-install -j$(nproc) \
         gmp \
         xsl
 
-RUN (pecl install redis-5.3.7 && docker-php-ext-enable redis) || echo "Redis extension installation failed, skipping..."
+RUN pecl channel-update pecl.php.net || true
 
-RUN (pecl install imagick-3.4.4 && docker-php-ext-enable imagick) || echo "ImageMagick extension installation failed, skipping..."
+RUN (pecl install redis-5.3.7 && docker-php-ext-enable redis && echo "Redis extension installed successfully") || echo "Redis extension installation failed, skipping..."
 
-RUN (pecl install geoip-1.1.1 && docker-php-ext-enable geoip) || echo "GeoIP extension installation failed, skipping..."
+RUN (pecl install imagick-3.4.4 && docker-php-ext-enable imagick && echo "ImageMagick extension installed successfully") || echo "ImageMagick extension installation failed, skipping..."
 
-RUN (pecl install swoole-4.8.13 && docker-php-ext-enable swoole) || echo "Swoole extension installation failed, skipping..."
+RUN (pecl install geoip-1.1.1 && docker-php-ext-enable geoip && echo "GeoIP extension installation failed, skipping..."
+
+RUN (pecl install swoole-4.8.13 && docker-php-ext-enable swoole && echo "Swoole extension installed successfully") || echo "Swoole extension installation failed, skipping..."
 
 # RUN (pecl install grpc-1.42.0 && docker-php-ext-enable grpc) || echo "gRPC extension installation failed, skipping..."
 # RUN (pecl install protobuf-3.21.12 && docker-php-ext-enable protobuf) || echo "Protobuf extension installation failed, skipping..."
