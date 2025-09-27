@@ -74,9 +74,7 @@ RUN docker-php-ext-install -j$(nproc) \
         ctype \
         curl \
         dom \
-        exif \
         fileinfo \
-        ftp \
         hash \
         iconv \
         json \
@@ -87,7 +85,6 @@ RUN docker-php-ext-install -j$(nproc) \
         phar \
         posix \
         session \
-        sqlite3 \
         tokenizer \
         xml \
         xmlreader \
