@@ -53,8 +53,8 @@ RUN set -eux; \
         libffi7 \
         libtidy5deb1 \
         libenchant-2-2 \
-        libsnmp35 \
-        libpspell15; \
+        libsnmp30 \
+        libaspell15; \
     \
     apt-get install -y --no-install-recommends \
         wget \
@@ -89,7 +89,7 @@ RUN set -eux; \
         libtidy-dev \
         libenchant-2-dev \
         libsnmp-dev \
-        libpspell-dev \
+        libaspell-dev \
         librecode-dev \
         libc-client-dev \
         libkrb5-dev \
@@ -178,7 +178,7 @@ RUN set -eux; \
         libtidy-dev \
         libenchant-2-dev \
         libsnmp-dev \
-        libpspell-dev \
+        libaspell-dev \
         librecode-dev \
         libc-client-dev \
         libkrb5-dev \
