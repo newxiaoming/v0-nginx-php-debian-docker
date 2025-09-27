@@ -52,9 +52,7 @@ RUN set -eux; \
         libargon2-1 \
         libffi7 \
         libtidy5deb1 \
-        libenchant-2-2 \
-        libsnmp30 \
-        libaspell15; \
+        libenchant-2-2; \
     \
     apt-get install -y --no-install-recommends \
         wget \
@@ -88,8 +86,6 @@ RUN set -eux; \
         libffi-dev \
         libtidy-dev \
         libenchant-2-dev \
-        libsnmp-dev \
-        libaspell-dev \
         librecode-dev \
         libc-client-dev \
         libkrb5-dev \
@@ -177,8 +173,6 @@ RUN set -eux; \
         libffi-dev \
         libtidy-dev \
         libenchant-2-dev \
-        libsnmp-dev \
-        libaspell-dev \
         librecode-dev \
         libc-client-dev \
         libkrb5-dev \
