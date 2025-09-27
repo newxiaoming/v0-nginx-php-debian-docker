@@ -73,7 +73,6 @@ RUN docker-php-ext-install -j$(nproc) \
         calendar \
         ctype \
         curl \
-        dom \
         fileinfo \
         hash \
         iconv \
@@ -85,10 +84,12 @@ RUN docker-php-ext-install -j$(nproc) \
         phar \
         posix \
         session \
-        tokenizer \
-        xml \
-        xmlreader \
-        xmlwriter
+        tokenizer
+
+RUN docker-php-ext-install -j$(nproc) xml
+RUN docker-php-ext-install -j$(nproc) dom
+RUN (docker-php-ext-install xmlreader && echo "XMLReader extension installed successfully") || echo "XMLReader extension installation failed, skipping..."
+RUN (docker-php-ext-install xmlwriter && echo "XMLWriter extension installed successfully") || echo "XMLWriter extension installation failed, skipping..."
 
 RUN (docker-php-ext-install filter && echo "Filter extension installed successfully") || echo "Filter extension installation failed, skipping..."
 
@@ -119,7 +120,7 @@ RUN (pecl install redis-5.3.7 && docker-php-ext-enable redis && echo "Redis exte
 
 RUN (pecl install imagick-3.4.4 && docker-php-ext-enable imagick && echo "ImageMagick extension installed successfully") || echo "ImageMagick extension installation failed, skipping..."
 
-RUN (pecl install geoip-1.1.1 && docker-php-ext-enable geoip && echo "GeoIP extension installation failed, skipping..."
+RUN (pecl install geoip-1.1.1 && docker-php-ext-enable geoip && echo "GeoIP extension installed successfully") || echo "GeoIP extension installation failed, skipping..."
 
 RUN (pecl install swoole-4.8.13 && docker-php-ext-enable swoole && echo "Swoole extension installed successfully") || echo "Swoole extension installation failed, skipping..."
 
