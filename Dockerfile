@@ -7,68 +7,98 @@ ENV NGINX_VERSION=1.28
 ENV SUPERVISOR_VERSION=4.2.4
 ENV COMPOSER_VERSION=2.6.3
 
-# 创建目录结构
-RUN mkdir -p /opt/websrv/data/wwwroot \
-    /opt/websrv/logs/nginx \
-    /opt/websrv/logs/php \
-    /opt/websrv/config/nginx \
-    /opt/websrv/config/php \
-    /opt/websrv/run \
-    /var/lib/php/sessions \
-    /var/lib/php/wsdlcache
-
-# 更新包管理器并安装基础依赖
-RUN \
-    sed -i "s@deb.debian.org@mirrors.ustc.edu.cn@g" /etc/apt/sources.list && \
-    sed -i "s@security.debian.org@mirrors.ustc.edu.cn@g" /etc/apt/sources.list && \
-    apt-get update && apt-get install -y \
-    wget \
-    curl \
-    gnupg2 \
-    lsb-release \
-    ca-certificates \
-    apt-transport-https \
-    software-properties-common \
-    supervisor \
-    nginx \
-    git \
-    # PHP扩展编译依赖
-    libxml2-dev \
-    libssl-dev \
-    libcurl4-openssl-dev \
-    libjpeg-dev \
-    libpng-dev \
-    libfreetype6-dev \
-    libonig-dev \
-    libzip-dev \
-    libsqlite3-dev \
-    default-libmysqlclient-dev \
-    libgmp-dev \
-    libicu-dev \
-    libbz2-dev \
-    libreadline-dev \
-    libncurses5-dev \
-    libxslt1-dev \
-    libgeoip-dev \
-    libprotobuf-dev \
-    protobuf-compiler \
-    libmagickwand-dev \
-    libpcre3-dev \
-    libedit-dev \
-    libsodium-dev \
-    libargon2-dev \
-    libffi-dev \
-    libtidy-dev \
-    libenchant-2-dev \
-    libsnmp-dev \
-    libpspell-dev \
-    librecode-dev \
-    libc-client-dev \
-    libkrb5-dev \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN docker-php-ext-install -j$(nproc) \
+RUN set -eux; \
+    # 创建目录结构
+    mkdir -p /opt/websrv/data/wwwroot \
+        /opt/websrv/logs/nginx \
+        /opt/websrv/logs/php \
+        /opt/websrv/config/nginx \
+        /opt/websrv/config/php \
+        /opt/websrv/run \
+        /var/lib/php/sessions \
+        /var/lib/php/wsdlcache; \
+    \
+    # 更新包管理器并安装依赖
+    sed -i "s@deb.debian.org@mirrors.ustc.edu.cn@g" /etc/apt/sources.list; \
+    sed -i "s@security.debian.org@mirrors.ustc.edu.cn@g" /etc/apt/sources.list; \
+    apt-get update; \
+    \
+    apt-get install -y --no-install-recommends \
+        # 运行时依赖
+        nginx \
+        supervisor \
+        curl \
+        ca-certificates \
+        # PHP扩展运行时依赖
+        libxml2 \
+        libssl1.1 \
+        libcurl4 \
+        libjpeg62-turbo \
+        libpng16-16 \
+        libfreetype6 \
+        libonig5 \
+        libzip4 \
+        libsqlite3-0 \
+        libmariadb3 \
+        libgmp10 \
+        libicu67 \
+        libbz2-1.0 \
+        libreadline8 \
+        libncurses6 \
+        libxslt1.1 \
+        libgeoip1 \
+        libmagickwand-6.q16-6 \
+        libsodium23 \
+        libargon2-1 \
+        libffi7 \
+        libtidy5deb1 \
+        libenchant-2-2 \
+        libsnmp35 \
+        libpspell15; \
+    \
+    apt-get install -y --no-install-recommends \
+        wget \
+        gnupg2 \
+        git \
+        # PHP扩展编译依赖
+        libxml2-dev \
+        libssl-dev \
+        libcurl4-openssl-dev \
+        libjpeg-dev \
+        libpng-dev \
+        libfreetype6-dev \
+        libonig-dev \
+        libzip-dev \
+        libsqlite3-dev \
+        default-libmysqlclient-dev \
+        libgmp-dev \
+        libicu-dev \
+        libbz2-dev \
+        libreadline-dev \
+        libncurses5-dev \
+        libxslt1-dev \
+        libgeoip-dev \
+        libprotobuf-dev \
+        protobuf-compiler \
+        libmagickwand-dev \
+        libpcre3-dev \
+        libedit-dev \
+        libsodium-dev \
+        libargon2-dev \
+        libffi-dev \
+        libtidy-dev \
+        libenchant-2-dev \
+        libsnmp-dev \
+        libpspell-dev \
+        librecode-dev \
+        libc-client-dev \
+        libkrb5-dev \
+        build-essential; \
+    \
+    docker-php-ext-configure gd --with-freetype-dir=/usr --with-jpeg-dir=/usr --with-png-dir=/usr; \
+    docker-php-ext-configure intl; \
+    \
+    docker-php-ext-install -j$(nproc) \
         bcmath \
         calendar \
         ctype \
@@ -84,23 +114,11 @@ RUN docker-php-ext-install -j$(nproc) \
         phar \
         posix \
         session \
-        tokenizer
-
-RUN docker-php-ext-install -j$(nproc) xml
-RUN docker-php-ext-install -j$(nproc) dom
-RUN (docker-php-ext-install xmlreader && echo "XMLReader extension installed successfully") || echo "XMLReader extension installation failed, skipping..."
-RUN (docker-php-ext-install xmlwriter && echo "XMLWriter extension installed successfully") || echo "XMLWriter extension installation failed, skipping..."
-
-RUN (docker-php-ext-install filter && echo "Filter extension installed successfully") || echo "Filter extension installation failed, skipping..."
-
-RUN docker-php-ext-configure gd --with-freetype-dir=/usr --with-jpeg-dir=/usr --with-png-dir=/usr \
-    && docker-php-ext-install -j$(nproc) gd
-
-RUN docker-php-ext-configure intl \
-    && docker-php-ext-install -j$(nproc) intl
-
-# 安装PHP核心扩展 - 系统相关扩展
-RUN docker-php-ext-install -j$(nproc) \
+        tokenizer \
+        xml \
+        dom \
+        gd \
+        intl \
         mysqli \
         pcntl \
         shmop \
@@ -112,23 +130,72 @@ RUN docker-php-ext-install -j$(nproc) \
         bz2 \
         zip \
         gmp \
-        xsl
-
-RUN pecl channel-update pecl.php.net || true
-
-RUN (pecl install redis-5.3.7 && docker-php-ext-enable redis && echo "Redis extension installed successfully") || echo "Redis extension installation failed, skipping..."
-
-RUN (pecl install imagick-3.4.4 && docker-php-ext-enable imagick && echo "ImageMagick extension installed successfully") || echo "ImageMagick extension installation failed, skipping..."
-
-RUN (pecl install geoip-1.1.1 && docker-php-ext-enable geoip && echo "GeoIP extension installed successfully") || echo "GeoIP extension installation failed, skipping..."
-
-RUN (pecl install swoole-4.8.13 && docker-php-ext-enable swoole && echo "Swoole extension installed successfully") || echo "Swoole extension installation failed, skipping..."
-
-# RUN (pecl install grpc-1.42.0 && docker-php-ext-enable grpc) || echo "gRPC extension installation failed, skipping..."
-# RUN (pecl install protobuf-3.21.12 && docker-php-ext-enable protobuf) || echo "Protobuf extension installation failed, skipping..."
-
-# 安装Composer
-RUN curl -sS https://getcomposer.org/installer | php -- --version=${COMPOSER_VERSION} --install-dir=/usr/local/bin --filename=composer
+        xsl; \
+    \
+    (docker-php-ext-install xmlreader || echo "XMLReader failed") && \
+    (docker-php-ext-install xmlwriter || echo "XMLWriter failed") && \
+    (docker-php-ext-install filter || echo "Filter failed"); \
+    \
+    pecl channel-update pecl.php.net || true; \
+    (pecl install redis-5.3.7 && docker-php-ext-enable redis) || echo "Redis failed"; \
+    (pecl install imagick-3.4.4 && docker-php-ext-enable imagick) || echo "ImageMagick failed"; \
+    (pecl install geoip-1.1.1 && docker-php-ext-enable geoip) || echo "GeoIP failed"; \
+    (pecl install swoole-4.8.13 && docker-php-ext-enable swoole) || echo "Swoole failed"; \
+    \
+    curl -sS https://getcomposer.org/installer | php -- --version=${COMPOSER_VERSION} --install-dir=/usr/local/bin --filename=composer; \
+    \
+    groupadd -f nginx && useradd -r -g nginx nginx || true; \
+    \
+    apt-get purge -y --auto-remove \
+        wget \
+        gnupg2 \
+        git \
+        libxml2-dev \
+        libssl-dev \
+        libcurl4-openssl-dev \
+        libjpeg-dev \
+        libpng-dev \
+        libfreetype6-dev \
+        libonig-dev \
+        libzip-dev \
+        libsqlite3-dev \
+        default-libmysqlclient-dev \
+        libgmp-dev \
+        libicu-dev \
+        libbz2-dev \
+        libreadline-dev \
+        libncurses5-dev \
+        libxslt1-dev \
+        libgeoip-dev \
+        libprotobuf-dev \
+        protobuf-compiler \
+        libmagickwand-dev \
+        libpcre3-dev \
+        libedit-dev \
+        libsodium-dev \
+        libargon2-dev \
+        libffi-dev \
+        libtidy-dev \
+        libenchant-2-dev \
+        libsnmp-dev \
+        libpspell-dev \
+        librecode-dev \
+        libc-client-dev \
+        libkrb5-dev \
+        build-essential; \
+    \
+    apt-get clean; \
+    rm -rf /var/lib/apt/lists/*; \
+    rm -rf /tmp/pear; \
+    rm -rf /var/cache/apt/*; \
+    \
+    chown -R www-data:www-data /var/lib/php; \
+    chmod -R 755 /var/lib/php; \
+    chown -R nginx:nginx /opt/websrv/data/wwwroot; \
+    chown -R nginx:nginx /opt/websrv/logs; \
+    chmod -R 755 /opt/websrv/data/wwwroot; \
+    \
+    echo "<?php phpinfo(); ?>" > /opt/websrv/data/wwwroot/index.php
 
 # 配置Nginx
 COPY nginx.conf /opt/websrv/config/nginx/nginx.conf
@@ -144,21 +211,6 @@ COPY php.ini /opt/websrv/config/php/php.ini
 
 # 配置Supervisor
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-
-# 创建nginx用户和组（如果不存在）
-RUN groupadd -f nginx && useradd -r -g nginx nginx || true
-
-# 设置权限
-RUN chown -R www-data:www-data /var/lib/php \
-    && chmod -R 755 /var/lib/php
-
-# 设置权限
-RUN chown -R nginx:nginx /opt/websrv/data/wwwroot \
-    && chown -R nginx:nginx /opt/websrv/logs \
-    && chmod -R 755 /opt/websrv/data/wwwroot
-
-# 创建默认的index.php
-RUN echo "<?php phpinfo(); ?>" > /opt/websrv/data/wwwroot/index.php
 
 # 暴露端口
 EXPOSE 80 443
