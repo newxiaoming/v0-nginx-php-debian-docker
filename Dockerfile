@@ -12,7 +12,7 @@ RUN set -eux; \
     mkdir -p /opt/websrv/data/wwwroot \
         /opt/websrv/logs/nginx \
         /opt/websrv/logs/php \
-        /opt/websrv/config/nginx \
+        /opt/websrv/config/nginx/conf.d \
         /opt/websrv/config/php \
         /opt/websrv/run \
         /var/lib/php/sessions \
@@ -192,8 +192,11 @@ RUN set -eux; \
     echo "<?php phpinfo(); ?>" > /opt/websrv/data/wwwroot/index.php
 
 # 配置Nginx
-COPY nginx.conf /opt/websrv/config/nginx/nginx.conf
-COPY default.conf /opt/websrv/config/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/nginx.conf
+COPY default.conf /etc/nginx/conf.d/default.conf
+
+RUN ln -sf /opt/websrv/logs/nginx /var/log/nginx && \
+    ln -sf /opt/websrv/run/nginx.pid /var/run/nginx.pid
 
 # 创建PHP配置目录
 RUN mkdir -p /opt/websrv/config/php/pool.d
