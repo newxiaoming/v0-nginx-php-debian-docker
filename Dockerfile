@@ -87,7 +87,6 @@ RUN docker-php-ext-install -j$(nproc) \
         phar \
         posix \
         session \
-        simplexml \
         sqlite3 \
         tokenizer \
         xml \
