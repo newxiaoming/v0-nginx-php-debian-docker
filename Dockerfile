@@ -187,9 +187,7 @@ RUN set -eux; \
     chmod -R 755 /var/lib/php; \
     chown -R nginx:nginx /opt/websrv/data/wwwroot; \
     chown -R nginx:nginx /opt/websrv/logs; \
-    chmod -R 755 /opt/websrv/data/wwwroot; \
-    \
-    echo "<?php phpinfo(); ?>" > /opt/websrv/data/wwwroot/index.php
+    chmod -R 755 /opt/websrv/data/wwwroot
 
 # 配置Nginx
 COPY nginx.conf /etc/nginx/nginx.conf
