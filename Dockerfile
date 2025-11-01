@@ -1,5 +1,5 @@
 # 使用官方PHP 7.3-fpm镜像作为基础
-FROM php:7.3.33-fpm-bullseye
+FROM ccr.ccs.tencentyun.com/mynew5tt-base/php:7.3.33-fpm-bullseye
 
 # 设置环境变量
 ENV DEBIAN_FRONTEND=noninteractive
