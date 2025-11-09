@@ -83,6 +83,12 @@ RUN set -eux; \
     zlib1g-dev \
     pkg-config \
     cmake \
+    autoconf \
+    automake \
+    libtool \
+    make \
+    g++ \
+    unzip \
     libmagickwand-dev \
     libpcre3-dev \
     libedit-dev \
@@ -143,10 +149,42 @@ RUN set -eux; \
     (pecl install geoip-1.1.1 && docker-php-ext-enable geoip) || echo "GeoIP failed"; \
     (pecl install swoole-4.8.13 && docker-php-ext-enable swoole) || echo "Swoole failed"; \
     \
-    # 安装gRPC扩展 - 使用适合PHP 7.3的稳定版本
-    (pecl install grpc-1.30.0 && docker-php-ext-enable grpc) || echo "gRPC failed"; \
+    # 安装gRPC扩展 - 多种备选方案确保安装成功
+    echo "开始安装gRPC扩展..."; \
+    export MAKEFLAGS="-j$(nproc)"; \
+    \
+    # 方案1: 尝试安装gRPC 1.25.0
+    (pecl install grpc-1.25.0 && docker-php-ext-enable grpc && echo "gRPC 1.25.0 安装成功") || \
+    \
+    # 方案2: 如果失败，尝试gRPC 1.20.0
+    (echo "尝试gRPC 1.20.0..." && pecl install grpc-1.20.0 && docker-php-ext-enable grpc && echo "gRPC 1.20.0 安装成功") || \
+    \
+    # 方案3: 如果还是失败，尝试手动编译最新稳定版
+    (echo "尝试手动编译gRPC..." && \
+    cd /tmp && \
+    curl -L https://pecl.php.net/get/grpc-1.25.0.tgz -o grpc.tgz && \
+    tar -xzf grpc.tgz && \
+    cd grpc-* && \
+    phpize && \
+    ./configure --enable-grpc && \
+    make -j$(nproc) && \
+    make install && \
+    docker-php-ext-enable grpc && \
+    cd / && rm -rf /tmp/grpc* && \
+    echo "手动编译gRPC成功") || \
+    \
+    echo "所有gRPC安装方案都失败了"; \
+    \
     # 验证gRPC扩展安装
-    php -m | grep grpc && echo "gRPC extension installed successfully" || echo "gRPC extension not found in modules"; \
+    if php -m | grep -q grpc; then \
+    echo "✅ gRPC扩展安装成功"; \
+    echo "gRPC版本: $(php --ri grpc | grep 'grpc support' || echo '无法获取版本信息')"; \
+    ls -la $(php-config --extension-dir)/grpc.so; \
+    else \
+    echo "❌ gRPC扩展安装失败"; \
+    echo "扩展目录内容:"; \
+    ls -la $(php-config --extension-dir)/ | grep '\.so$' || echo "没有找到扩展文件"; \
+    fi; \
     \
     curl -sS https://getcomposer.org/installer | php -- --version=${COMPOSER_VERSION} --install-dir=/usr/local/bin --filename=composer; \
     \
@@ -185,8 +223,13 @@ RUN set -eux; \
     libc-client-dev \
     libkrb5-dev \
     zlib1g-dev \
-    pkg-config \
     cmake \
+    autoconf \
+    automake \
+    libtool \
+    make \
+    g++ \
+    unzip \
     build-essential; \
     \
     apt-get clean; \
