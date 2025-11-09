@@ -137,6 +137,7 @@ RUN set -eux; \
     (pecl install imagick-3.4.4 && docker-php-ext-enable imagick) || echo "ImageMagick failed"; \
     (pecl install geoip-1.1.1 && docker-php-ext-enable geoip) || echo "GeoIP failed"; \
     (pecl install swoole-4.8.13 && docker-php-ext-enable swoole) || echo "Swoole failed"; \
+    (pecl install grpc-1.42.0 && docker-php-ext-enable grpc) || echo "gRPC failed"; \
     \
     curl -sS https://getcomposer.org/installer | php -- --version=${COMPOSER_VERSION} --install-dir=/usr/local/bin --filename=composer; \
     \
