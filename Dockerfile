@@ -52,7 +52,9 @@ RUN set -eux; \
     libargon2-1 \
     libffi7 \
     libtidy5deb1 \
-    libenchant-2-2; \
+    libenchant-2-2 \
+    libprotobuf23 \
+    zlib1g; \
     \
     apt-get install -y --no-install-recommends \
     wget \
@@ -78,6 +80,9 @@ RUN set -eux; \
     libgeoip-dev \
     libprotobuf-dev \
     protobuf-compiler \
+    zlib1g-dev \
+    pkg-config \
+    cmake \
     libmagickwand-dev \
     libpcre3-dev \
     libedit-dev \
@@ -137,7 +142,11 @@ RUN set -eux; \
     (pecl install imagick-3.4.4 && docker-php-ext-enable imagick) || echo "ImageMagick failed"; \
     (pecl install geoip-1.1.1 && docker-php-ext-enable geoip) || echo "GeoIP failed"; \
     (pecl install swoole-4.8.13 && docker-php-ext-enable swoole) || echo "Swoole failed"; \
-    (pecl install grpc-1.42.0 && docker-php-ext-enable grpc) || echo "gRPC failed"; \
+    \
+    # 安装gRPC扩展 - 使用适合PHP 7.3的稳定版本
+    (pecl install grpc-1.30.0 && docker-php-ext-enable grpc) || echo "gRPC failed"; \
+    # 验证gRPC扩展安装
+    php -m | grep grpc && echo "gRPC extension installed successfully" || echo "gRPC extension not found in modules"; \
     \
     curl -sS https://getcomposer.org/installer | php -- --version=${COMPOSER_VERSION} --install-dir=/usr/local/bin --filename=composer; \
     \
@@ -164,8 +173,6 @@ RUN set -eux; \
     libncurses5-dev \
     libxslt1-dev \
     libgeoip-dev \
-    libprotobuf-dev \
-    protobuf-compiler \
     libmagickwand-dev \
     libpcre3-dev \
     libedit-dev \
@@ -177,6 +184,9 @@ RUN set -eux; \
     librecode-dev \
     libc-client-dev \
     libkrb5-dev \
+    zlib1g-dev \
+    pkg-config \
+    cmake \
     build-essential; \
     \
     apt-get clean; \
