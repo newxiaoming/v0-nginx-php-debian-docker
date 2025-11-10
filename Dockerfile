@@ -90,8 +90,6 @@ RUN set -eux; \
     make \
     g++ \
     unzip \
-    python3 \
-    python3-dev \
     libmagickwand-dev \
     libpcre3-dev \
     libedit-dev \
@@ -152,45 +150,57 @@ RUN set -eux; \
     (pecl install geoip-1.1.1 && docker-php-ext-enable geoip) || echo "GeoIP failed"; \
     (pecl install swoole-4.8.13 && docker-php-ext-enable swoole) || echo "Swoole failed"; \
     \
-    # 使用源码方式安装gRPC扩展 - 使用适合PHP 7.3的版本
-    echo "开始使用源码方式安装gRPC扩展..."; \
-    cd /tmp && \
-    echo "正在克隆gRPC源码..." && \
-    git clone -b v1.30.0 https://github.com/grpc/grpc && \
-    cd grpc && \
-    echo "正在初始化子模块..." && \
-    git submodule update --init --recursive && \
-    echo "开始编译gRPC核心库..." && \
-    export MAKEFLAGS="-j$(nproc)" && \
-    EXTRA_DEFINES=GRPC_POSIX_FORK_ALLOW_PTHREAD_ATFORK make && \
-    grpc_root="$(pwd)" && \
-    echo "gRPC核心库编译完成，开始编译PHP扩展..." && \
-    cd src/php/ext/grpc && \
+    # 使用PECL方式安装protobuf和gRPC扩展
+    echo "开始安装protobuf扩展..."; \
+    (cd /tmp && \
+    wget https://pecl.php.net/get/protobuf-3.21.9.tgz && \
+    tar -xzf protobuf-3.21.9.tgz && \
+    cd protobuf-3.21.9 && \
     phpize && \
-    echo "配置PHP gRPC扩展..." && \
-    GRPC_LIB_SUBDIR=libs/opt ./configure --enable-grpc="${grpc_root}" && \
-    echo "编译PHP gRPC扩展..." && \
-    make && \
-    echo "安装PHP gRPC扩展..." && \
+    ./configure && \
+    make -j$(nproc) && \
     make install && \
-    echo "启用gRPC扩展..." && \
-    docker-php-ext-enable grpc && \
-    cd / && \
-    echo "清理临时文件..." && \
-    rm -rf /tmp/grpc && \
-    echo "✅ gRPC扩展源码安装完成"; \
+    docker-php-ext-enable protobuf && \
+    cd / && rm -rf /tmp/protobuf-3.21.9*) || echo "Protobuf failed"; \
     \
-    # 验证gRPC扩展安装
+    echo "开始安装gRPC扩展..."; \
+    (cd /tmp && \
+    wget https://pecl.php.net/get/grpc-1.50.2.tgz && \
+    tar -xzf grpc-1.50.2.tgz && \
+    cd grpc-1.50.2 && \
+    phpize && \
+    ./configure && \
+    make -j$(nproc) && \
+    make install && \
+    docker-php-ext-enable grpc && \
+    cd / && rm -rf /tmp/grpc-1.50.2*) || echo "gRPC failed"; \
+    \
+    # 验证protobuf和gRPC扩展安装
+    echo "=== 扩展安装验证 ==="; \
+    \
+    # 检查protobuf扩展
+    if php -m | grep -q protobuf; then \
+    echo "✅ Protobuf扩展安装成功"; \
+    echo "Protobuf版本: $(php --ri protobuf | grep 'protobuf support' || echo '无法获取版本')"; \
+    ls -la $(php-config --extension-dir)/protobuf.so; \
+    else \
+    echo "❌ Protobuf扩展安装失败"; \
+    fi; \
+    \
+    # 检查gRPC扩展
     if php -m | grep -q grpc; then \
     echo "✅ gRPC扩展安装成功"; \
-    echo "gRPC版本信息:"; \
-    php --ri grpc | head -10 || echo "无法获取详细版本信息"; \
+    echo "gRPC版本: $(php --ri grpc | grep 'grpc support' || echo '无法获取版本')"; \
     ls -la $(php-config --extension-dir)/grpc.so; \
     else \
     echo "❌ gRPC扩展安装失败"; \
+    fi; \
+    \
+    # 显示所有已安装的扩展文件
     echo "扩展目录内容:"; \
     ls -la $(php-config --extension-dir)/ | grep '\.so$' || echo "没有找到扩展文件"; \
-    fi; \
+    \
+    echo "=== 验证完成 ==="; \
     \
     curl -sS https://getcomposer.org/installer | php -- --version=${COMPOSER_VERSION} --install-dir=/usr/local/bin --filename=composer; \
     \
@@ -236,8 +246,6 @@ RUN set -eux; \
     make \
     g++ \
     unzip \
-    python3 \
-    python3-dev \
     build-essential; \
     \
     apt-get clean; \
