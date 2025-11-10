@@ -1,3 +1,4 @@
+ARG BUILDPLATFORM
 # 使用官方PHP 7.3.33-fpm-bullseye镜像作为基础
 FROM --platform=$BUILDPLATFORM php:7.3.33-fpm-bullseye
 
