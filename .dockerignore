@@ -1,0 +1,71 @@
+# Git相关文件
+.git
+.gitignore
+.gitattributes
+
+# 文档和说明文件
+README.md
+*.md
+docs/
+documentation/
+
+# 日志文件
+*.log
+logs/
+log/
+
+# 临时文件
+*.tmp
+*.temp
+.tmp/
+tmp/
+
+# 备份文件
+*.bak
+*.backup
+*~
+
+# IDE和编辑器文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# 测试文件
+test/
+tests/
+*_test.go
+*_test.php
+*.test
+
+# 构建产物
+build/
+dist/
+target/
+out/
+
+# 依赖和包管理
+node_modules/
+vendor/
+composer.lock
+package-lock.json
+yarn.lock
+
+# 环境配置文件
+.env
+.env.local
+.env.*.local
+*.env
+
+# 缓存文件
+.cache/
+cache/
+*.cache
+
+# 其他不需要的文件
+*.pid
+*.sock
+*.lock
